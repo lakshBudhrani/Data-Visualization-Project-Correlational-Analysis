@@ -1,0 +1,916 @@
+---
+title: "Project - Correlation Analysis"
+author: "Laksh Anil Budhrani"
+date: "2024-11-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(socviz)
+library(dplyr)
+```
+
+## 1. Introduction
+
+In this technical report, we will explore `Iris` dataset by looking at it's associations in pair of variables by making Plots and using Pearson's correlation coefficient. 
+
+Iris dataset in R is present in `socviz` library and gives information about 50 flowers from 3 species of Iris(which is a genus of flowers). The species are *Iris setosa, versicolor, and virginica*. This dataset totally has 150 records with 5 attributes. Each observation in the dataset represents a plant with 5 features - *sepal length, sepal width, petal length, petal width and species*. 
+
+The data in this dataset was collected by **Edgar Anderson** originally in 1935. The Iris dataset is widely used as a beginners dataset for machine learning purposes.
+
+We begin our report by describing/summarizing the data using some functions in R. Some of these functions are in-built in R, while some of them are needed to be included into our code by importing the required library. For e.g., summary() is in-built in R while to use glimpse(), we need to include `dplyr` library in our code.
+
+Then we proceed by plotting different ScatterPlots for all the combination of properties of Iris dataset without faceting. Within each pair, we conduct the correlational analysis by calculating Pearson’s correlation coefficient and test its statistical significance.
+
+Then we repeat the same process of plotting and conducting it's correlational analysis after doing facet based on categorical variable Species.
+
+We list the key findings from the analysis we conduct in the Discussion and Interpretation section. Finally, in the last section, we present the conclusion of our report.
+
+## 2. Description/Summary
+
+We are going to use a few functions built in R to summarize/describe our dataset Iris. The number of functions to summarize/describe a dataset are not limited to ones we have used below. We have a lot more functions to provide way more good and deeper insights of the data. But for this report's purpose, we are only going to use a few functions that are easily available and enough to give us a good overview/big picture for the data.
+
+### glimpse()
+The Iris dataset consists of 150 rows and 5 columns. The column names are - Sepal.Length, Sepal.Width, Petal.Length, Petal.Width, and Species. The first four columns in this dataset have **double** datatype, while the last column is a factor. We get this information from *glimpse* function, which gives us the quick overview of dataset, including the datatypes and preview of data. 
+```{r}
+glimpse(iris)
+```
+
+### head()
+Below are the first few rows for Iris dataset. This helps us in understanding the initial structure and values of dataset. We use *head* function for this purpose  -
+```{r}
+head(iris)
+```
+
+### dim()
+The number of rows and columns can be verified using *dim* function, which gives the dimensions(150 rows and 5 columns) for dataset - 
+```{r}
+dim(iris)
+```
+
+### summary()
+We can get basic summary statistics for our dataset using *summary* function. If the column has quantitative data, it gives the 5 number summary along with mean for the respective column. Whereas if the data is categorical for the column, it gives count for each category.
+
+The below is the description of our dataset -
+```{r}
+summary(iris)
+```
+
+For the first column, **Sepal.Length** - 
+
+ - It's range is from 4.3 to 7.9
+ - Mean and Median are approximately same, hence its histogram should be normal
+ - There should not be any outliers
+
+For the second column, **Sepal.Width** -
+
+ - It's range is from 2.0 to 4.4
+ - Mean and Median are approximately same, hence its histogram should be normal 
+ - There should be some potential outliers towards the higher end
+
+For the third column, **Petal.Length** -
+
+ - It's range is from 1.0 to 6.9
+ - Mean and Median are not close, hence suggests that the histogram should be skewed. After observing more, it can be predicted that the histogram should left skewed as the difference between median and Q1 is greater than difference between median and Q3
+ - There should not be any outliers
+
+For the fourth column, **Petal.Width** -
+
+ - It's range is from 0.1 to 2.5
+ - Mean and median are slightly away, hence the histogram should be skewed. After observing more, it can be predicted that the histogram should left skewed as the difference between median and Q1 is greater than difference between median and Q3
+ - There should not be any outliers
+ 
+For the fifth column, **Species** -
+Count is given for each levels in factor. In this case, each species has equal number of observations.
+
+### str()
+We can get a detailed structure of our dataset, including the datatypes of columns and preview of data using the *str* function. The below is structure of our Iris dataset -
+```{r}
+str(iris)
+```
+
+It initially shows that our Iris dataset is stored as dataframe in R with 150 observations with 5 variables. Then it shows preview of data for each column with its datatype. Basically, structure can be used as an alternate sometimes to glimpse function, if someone does not want to load the *dplyr* library.
+
+### table()
+The last summary/descriptive statistic function that we are going to use to understand our dataset is *table*. Table function is used to create a contingency table for categorical variables. In our case, the only categorical variable we have is **Species**.
+```{r}
+table(iris$Species)
+```
+
+In this case, we got 50 observations for each level in Species. This observation is consistent with our earlier observation from *summary* function. 
+
+## 3. Interpretation using ScatterPlots(WITHOUT faceting)
+
+We will make 6 comparisons using ScatterPlot in this report, where x-axis, y-axis and color will be used as aesthetics. The logic for making totally 6 comparisons is considering all possible pairwise comparisons of the 4 quantitative variables.
+
+Note that we can only consider the quantitative variables for horizontal and vertical axis. In our case, they are *Sepal.Length, Sepal.Width, Petal.Length and Petal.Width*. Hence, using the combination formula to find the total number of combinations for 4 variables, taking 2 variables at a time is -
+$$
+C(4, 2) = \frac{4!}{2!(4-2)!} = \frac{4!}{2!2!} = 6
+$$
+
+We can even think of it in this way. Consider the 4 variables as follows -
+Sepal.Length, Sepal.Width, Petal.Length, Petal.Width
+
+Now fix the first variable and make it's pair with the next 3 variables. That is totally 3 comparisons. Those are -
+
+1. Sepal.Length v/s Sepal.Width
+2. Sepal.Length v/s Petal.Length
+3. Sepal.Length v/s Petal.Width
+
+To avoid duplication, we will not compare them back. Because even if you do that, only the axis for the 2 variables would be changed, which does not provide us any new information. Hence, we will now fix the second variable and compare it with the next two variables. That is totally 2 comparisons. Those are -
+
+4. Sepal.Width v/s Petal.Length
+5. Sepal.Width v/s Petal.Width
+
+Lastly, repeating the process again, lets fix the third variable and compare it with the last variable. That is one comparison. That is -
+
+6. Petal.Length v/s Petal.Width
+
+Therefore, there are totally (3 + 2 + 1) = 6 unique combinations. They are - 
+1. Sepal.Length v/s Sepal.Width
+2. Sepal.Length v/s Petal.Length
+3. Sepal.Length v/s Petal.Width
+4. Sepal.Width v/s Petal.Length
+5. Sepal.Width v/s Petal.Width
+6. Petal.Length v/s Petal.Width
+
+We can even include our 5th variable in the scatterplot, i.e., Species. Even though it is a categorical variable, we can map it to color or shape aesthetics in the scatterplot. In our case, we are going to use **color** aesthetic to differentiate different species. 
+
+Even though we have added the categorical variable to our plots, we do not really interpret the trend in them deeply in this section. We will interpret them in depth later on in the 4th section of this report - *Interpretation using ScatterPlots(WITH faceting)*. In this section, we will focus on the overall trend of the scatterplot and correlation between the quantitative variables. 
+
+We check the four properties for each scatterplot - **1. Direction; 2. Form; 3. Strength; 4. Outlier(s)** to interpret it's meaning. After that, we check if our interpretation from scatterplot matches the results we get mathematically. We do that using Pearson's correlation coefficient and test its statistical significance for each pair of variables. 
+
+We will use 2 methods from R - `cor()` and `cor.test()`. cor() function is used to calculate Pearson’s correlation coefficient to understand the strength and direction of relationship. cor.test() is used to test the statistical significance of Pearson’s correlation coefficient. It takes numeric vectors of data values as input and returns a list with class "htest" containing 9 components. We use p.value out of that list for testing the statistical significance for the pair of variables. 
+
+So let's discuss the logic of testing statistical significance for each pair of variables - 
+
+Our **Null Hypothesis(H0)** for the test is that there is no relationship between the variables. 
+
+Our **Alternate Hypothesis(H1)** for the test is that there is a relation between the variables.
+
+Then we calculate our p-value using cor.test() which tells us the probability for evidence against the null hypothesis. Lower p-value means there is strong evidence against null hypothesis, suggesting that there is some relation between the variables(hence statistically significant). Higher p-value means that we fail to reject the null hypothesis.
+
+Usually we use 0.05 as the threshold to determine if p-value indicates statistical significance. This means when `p-value < 0.05`, the correlation is statistically significant. When `p-value >= 0.05`, it means correlation is not statistically significant.   
+
+### 1. Sepal.Length v/s Sepal.Width
+
+```{r}
+p <- ggplot(data = iris, mapping = aes(x = Sepal.Width, y = Sepal.Length))
+
+p + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     labs(x = "Sepal Width", 
+          y = "Sepal Length", 
+          title = "Sepal Dimensions in Iris Species", 
+          subtitle = "Visualizing Sepal Length and Width Across Iris Species", 
+          caption = "Source: Iris Dataset")
+```
+
+- **Direction:** The scatterplot does not show any specific direction in this comparison. 
+- **Form:** All the points are almost uniformly spread.
+- **Strength:** The scatterplot does not show any linear relationship.
+- **Outliers:** The scatterplot does not have any outliers. Since scatterplot is showing no pattern, it does not have any specific point which breaks the trend.
+
+Now we compare our observations from scatterplot with mathematical values to understand the relationship between variables. 
+
+```{r}
+pcor <- cor(iris$Sepal.Length, iris$Sepal.Width, method = "pearson")
+paste("Pearson's correlation coefficient: ", pcor)
+
+ctest <- cor.test(iris$Sepal.Length,iris$Sepal.Width, method = "pearson")
+paste("P-value: ", ctest$p.value)
+```
+
+A Pearson correlation coefficient of -0.1175698 indicates a very weak negative linear relationship between Sepal.Length and Sepal.Width.
+
+Since the p-value is 0.1518983, which is greater than 0.05, we fail to reject the null hypothesis. This means there isn’t enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations matches with our earlier observation from scatterplot, showing *NO SIGNIFICANT RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 2. Sepal.Length v/s Petal.Length
+
+```{r}
+p <- ggplot(data = iris, mapping = aes(x = Petal.Length, y = Sepal.Length))
+
+p + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     labs(x = "Petal Length", 
+          y = "Sepal Length", 
+          title = "Sepal and Petal Lengths in Iris Species", 
+          subtitle = "Exploring the Relationship Between Sepal and Petal Lengths", 
+          caption = "Source: Iris Dataset")
+```
+
+- **Direction:** The scatterplot shows Positive direction. As the predictor variable(Petal Length) goes up, the response variable(Sepal Length) also goes up. 
+- **Form:** The points are usually clustering near a line, hence Linear form.
+- **Strength:** The graph shows a strong Linear relationship.
+- **Outliers:** The graph does not shows any outlier. 
+
+Now we compare our observations from scatterplot with mathematical values to understand the relationship between variables.
+
+```{r}
+pcor2 <- cor(iris$Sepal.Length, iris$Petal.Length, method = "pearson")
+paste("Pearson's correlation coefficient: ", pcor2)
+
+ctest2 <- cor.test(iris$Sepal.Length, iris$Petal.Length, method = "pearson")
+paste("P-value: ", ctest2$p.value)
+```
+
+A Pearson correlation coefficient of 0.871753775886583 indicates a strong positive linear relationship between the two variables.
+
+Since the p-value is 1.038667e-47, which is much less than 0.05, we reject the null hypothesis. This means there is very strong evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations matches with our earlier observation from scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 3. Sepal.Length v/s Petal.Width
+
+```{r}
+p <- ggplot(data = iris, mapping = aes(x = Petal.Width, y = Sepal.Length))
+
+p + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     labs(x = "Petal Width", 
+          y = "Sepal Length", 
+          title = "Sepal Length vs. Petal Width in Iris Species", 
+          subtitle = "Analyzing the Correlation Between Sepal Length and Petal Width", 
+          caption = "Source: Iris Dataset")
+```
+
+- **Direction:** The graph shows a positive direction. As one variable goes up, the other variable goes up also.
+- **Form:** The points in general, make a cluster near a line.
+- **Strength:** The graph shows a moderate linear relationship.
+- **Outliers:** No outlier is visible in the graph.
+
+Now we compare our observations from scatterplot with mathematical values to understand the relationship between variables.
+
+```{r}
+pcor3 <- cor(iris$Sepal.Length, iris$Petal.Width, method = "pearson")
+paste("Pearson's correlation coefficient: ", pcor3)
+
+ctest3 <- cor.test(iris$Sepal.Length, iris$Petal.Width, method = "pearson")
+paste("P-value: ", ctest3$p.value)
+```
+
+Since the Pearson correlation coefficient is 0.817941126271575, which indicates a strong positive linear relationship between the two variables.
+
+Since the p-value is 2.32549807979338e-37, which is much less than 0.05, we reject the null hypothesis. This means there is very strong evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations almost matches with our earlier observation from scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 4. Sepal.Width v/s Petal.Length
+
+```{r}
+p <- ggplot(data = iris, mapping = aes(x = Petal.Length, y = Sepal.Width))
+
+p + geom_point(mapping = aes(color = Species)) +
+    geom_smooth(method = "lm", color = "black") +
+    labs(
+        x = "Petal Length", 
+        y = "Sepal Width", 
+        title = "Sepal Width and Petal Length in Iris Species", 
+        subtitle = "Investigating the Association Between Sepal Width and Petal Length", 
+        caption = "Source: Iris Dataset")
+```
+
+- **Direction:** The scatterplot shows slightly negative direction.
+- **Form:** The form is weakly linear.
+- **Strength:** The graph shows a weak linear relationship.
+- **Outliers:** Since the graph does not show any particular trend, it does not have any point breaking the trend. Hence, the graph does not have any outliers.
+
+Now we compare our observations from scatterplot with mathematical values to understand the relationship between variables.
+
+```{r}
+pcor4 <- cor(iris$Sepal.Width, iris$Petal.Length, method = "pearson")
+paste("Pearson's correlation coefficient: ", pcor4)
+
+ctest4 <- cor.test(iris$Sepal.Width, iris$Petal.Length, method = "pearson")
+paste("P-value: ", ctest4$p.value)
+```
+
+Since the Pearson correlation coefficient is -0.42844010433054, it indicates a moderate negative linear relationship between the two variables.
+
+Since the p-value is 4.51331426727308e-08, which is much less than 0.05, we reject the null hypothesis. This means there is very strong evidence to conclude that there is a significant relationship between the two variables.
+
+This is a good point to understand that our observations do not always match the results from inferential statistics, and the reverse can also be true.
+
+Here, even though Pearson’s correlation coefficient shows a moderate relationship between the two variables, the scatterplot suggests a weak relationship. This discrepancy may be due to outliers. Although we stated that there are no visible outliers, this was because no specific set of points appeared to break the trend. This highlights a key difference between statistics and mathematics: different people can have different visual interpretations of the same data. Some might see many outliers in the plot, while I perceive a weak trend rather than outliers.
+
+Conversely, human perception can sometimes misinterpret the strength of a relationship in a scatterplot, especially if the data points are spread out or clustered in a way that obscures the trend. It is possible that the inferential statistic (Pearson’s correlation coefficient) is correct, but I am misinterpreting the plot due to its appearance.
+
+The solution to this problem is either gaining a better understanding of your data or conducting a deeper analysis using more robust statistical methods. Although these solutions are not part of this report, recognizing their importance is crucial in real-life applications. 
+
+In this case, although our inferential statistic and observation about scatterplot did not match totally, still they both suggested that *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 5. Sepal.Width v/s Petal.Width
+
+```{r}
+p <- ggplot(data = iris, mapping = aes(x = Petal.Width, y = Sepal.Width))
+
+p + geom_point(mapping = aes(color = Species)) +
+    geom_smooth(method = "lm", color = "black") +
+    labs(
+        x = "Petal Width", 
+        y = "Sepal Width", 
+        title = "Sepal Width vs. Petal Width in Iris Species", 
+        subtitle = "Understanding the Relationship Between Sepal and Petal Widths", 
+        caption = "Source: Iris Dataset")
+```
+
+- **Direction:** The scatterplot shows slightly negative direction.
+- **Form:** The plot shows slight linear form.
+- **Strength:** The plot shows weak linear relationship.
+- **Outliers:** Like the previous plot, it does not appear that any trend is broken by any point or set of points, because there is no strict trend that is going on in the plot.
+
+Now we compare our observations from scatterplot with mathematical values to understand the relationship between variables.
+
+```{r}
+pcor5 <- cor(iris$Sepal.Width, iris$Petal.Width, method = "pearson")
+paste("Pearson's correlation coefficient: ", pcor5)
+
+ctest5 <- cor.test(iris$Sepal.Width, iris$Petal.Width, method = "pearson")
+paste("P-value: ", ctest5$p.value)
+```
+
+Since the Pearson correlation coefficient is -0.366125932536439, it indicates a moderate negative linear relationship between the two variables.
+
+Since the p-value is 4.07322851324624e-06, which is much less than 0.05, we reject the null hypothesis. This means there is very strong evidence to conclude that there is a significant relationship between the two variables.
+
+Most points from the observations and inferential statistic are similar, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 6. Petal.Length v/s Petal.Width
+```{r}
+p <- ggplot(data = iris, mapping = aes(x = Petal.Width, y = Petal.Length))
+
+p + geom_point(mapping = aes(color = Species)) +
+    geom_smooth(method = "lm", color = "black") +
+    labs(
+        x = "Petal Width", 
+        y = "Petal Length", 
+        title = "Petal Dimensions in Iris Species", 
+        subtitle = "Visualizing Petal Length and Width Across Iris Species", 
+        caption = "Source: Iris Dataset")
+```
+
+- **Directon:** The graph shows positive direction.
+- **Form:** The points cluster near a line, hence Linear form.
+- **Strength:** Strong Linear Relationship is shown in the plot.
+- **Outliers:** No specific outliers is visible breaking the trend of graph.
+
+Now we compare our observations from scatterplot with mathematical values to understand the relationship between variables.
+
+```{r}
+pcor6 <- cor(iris$Petal.Length, iris$Petal.Width, method = "pearson")
+paste("Pearson's correlation coefficient: ", pcor6)
+
+ctest6 <- cor.test(iris$Petal.Length, iris$Petal.Width, method = "pearson")
+paste("P-value: ", ctest6$p.value)
+```
+
+Since the Pearson correlation coefficient is 0.962865431402796, it indicates a very strong positive linear relationship between the two variables.
+
+Since the p-value is 4.67500390732856e-86, which is much less than 0.05, we reject the null hypothesis. This means there is extremely strong evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations matches with our earlier observation from scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+## 4. Interpretation using ScatterPlots(WITH faceting)
+
+In this section, we will create and analyze a total of 18 plots. The logic behind making 18 plots is straightforward: we have 6 unique combinations of the 4 variables in the iris dataset. We will facet each combination based on Species. Since there are 3 different species— *setosa, versicolor, and virginica* — each combination will result in 3 plots, leading to a total of 6 * 3 = 18 plots.
+
+However, instead of making 18 separate plots, we will use “small multiple plots” within these 6 main plots. For this, we will use R’s `facet_wrap()` function. The reason for using facet_wrap() is that we only have one categorical variable in our dataset, and facet_wrap() works well for this purpose. If we needed to facet based on multiple categorical variables, we would use `facet_grid()`.
+
+One question that arises is: why do we want to facet our dataset when we already have many good visualizations? The reason is that when many variables are plotted in the same graph, it becomes difficult to analyze and observe all the trends. For example, we previously examined the properties of the overall scatterplot but did not check the properties of the scatterplot within each Species. With multiple species in the same scatterplot, it is challenging to accurately analyze a single Species.
+
+That's why, we will now analyse the trends and patterns within each Species using faceting. 
+
+### 1. Sepal.Length v/s Sepal.Width
+
+```{r}
+p1 <- ggplot(data = iris, mapping = aes(x = Sepal.Width, y = Sepal.Length))
+
+p1 + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     facet_wrap(vars(Species)) +
+     labs(x = "Sepal Width", 
+          y = "Sepal Length", 
+          title = "Faceted Sepal Dimensions in Iris Species", 
+          subtitle = "Visualizing Sepal Length and Width Across Iris Species with Faceting", 
+          caption = "Source: Iris Dataset")
+```
+
+**Setosa**
+
+- **Direction:** Scatterplot shows a positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Strong linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+setosa_data <- subset(iris, Species == "setosa")
+pcor_setosa <- cor(setosa_data$Sepal.Length, setosa_data$Sepal.Width, method = "pearson")
+paste("Setosa - Pearson's correlation coefficient: ", pcor_setosa)
+
+ctest_setosa <- cor.test(setosa_data$Sepal.Length, setosa_data$Sepal.Width, method = "pearson")
+paste("Setosa - P-value: ", ctest_setosa$p.value)
+```
+
+A Pearson correlation coefficient of 0.74254668566516 indicates a strong positive linear relationship between Sepal.Length and Sepal.Width for Setosa species.
+
+Since the p-value is 6.70984301766051e-10, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Versicolor**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Moderate linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+versicolor_data <- subset(iris, Species == "versicolor")
+pcor_versicolor <- cor(versicolor_data$Sepal.Length, versicolor_data$Sepal.Width, method = "pearson")
+paste("Versicolor - Pearson's correlation coefficient: ", pcor_versicolor)
+
+ctest_versicolor <- cor.test(versicolor_data$Sepal.Length, versicolor_data$Sepal.Width, method = "pearson")
+paste("Versicolor - P-value: ", ctest_versicolor$p.value)
+```
+
+A Pearson correlation coefficient of 0.525910717282825 indicates a moderate positive linear relationship between Sepal.Length and Sepal.Width for Versicolor species.
+
+Since the p-value is 8.77186001197382e-05, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Virginica**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear
+- **Strength:** Weak linear relationship 
+- **Outliers:** Since the relationship is weak, there is no specific trend. Hence, no particular set of points were found that would break the pattern of scatterplot. 
+
+```{r}
+virginica_data <- subset(iris, Species == "virginica")
+pcor_virginica <- cor(virginica_data$Sepal.Length, virginica_data$Sepal.Width, method = "pearson")
+paste("Virginica - Pearson's correlation coefficient: ", pcor_virginica)
+
+ctest_virginica <- cor.test(virginica_data$Sepal.Length, virginica_data$Sepal.Width, method = "pearson")
+paste("Virginica - P-value: ", ctest_virginica$p.value)
+```
+
+A Pearson correlation coefficient of 0.457227816394113 indicates a moderate positive linear relationship between Sepal.Length and Sepal.Width for Virginica species.
+
+Since the p-value is 0.000843462472370875, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations almost matches with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 2. Sepal.Length v/s Petal.Length
+
+```{r}
+p2 <- ggplot(data = iris, mapping = aes(x = Petal.Length, y = Sepal.Length))
+
+p2 + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     facet_wrap(vars(Species)) +
+     labs(x = "Petal Length", 
+          y = "Sepal Length", 
+          title = "Faceted Sepal and Petal Lengths in Iris Species", 
+          subtitle = "Exploring the Relationship Between Sepal and Petal Lengths with Faceting", 
+          caption = "Source: Iris Dataset")
+```
+
+**Setosa**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Moderate linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+setosa_data <- subset(iris, Species == "setosa")
+pcor_setosa <- cor(setosa_data$Sepal.Length, setosa_data$Petal.Length, method = "pearson")
+paste("Setosa - Pearson's correlation coefficient: ", pcor_setosa)
+
+ctest_setosa <- cor.test(setosa_data$Sepal.Length, setosa_data$Petal.Length, method = "pearson")
+paste("Setosa - P-value: ", ctest_setosa$p.value)
+```
+
+A Pearson correlation coefficient of 0.267175758868757 indicates a weak positive linear relationship between Sepal.Length and Petal.Length for Setosa species.
+
+Since the p-value is 0.0606977838011346, which is greater than 0.05, we fail to reject the null hypothesis. This means there isn’t enough evidence to conclude that there is a significant relationship between the two variables.
+
+There is something to note here. Our earlier observations do not match the inferential statistics presented. This discrepancy is similar to what we observed during the Sepal Width vs Petal Length comparison in the previous section, where the visualization differed from the mathematical analysis.
+
+The reason for this discrepancy is the compactness of the scatterplot. Since all the points are between 0 to 2 on the x-axis, but the x-axis extends to 6, it is not clear whether the points are clustering in a line or not. To be more precise, the problem that we are facing is with faceted graphs where different species have different ranges for the x-axis.
+
+An effective solution is to use `scales = "free"` within the facet_wrap() function. This allows each facet to have its own scale, making it easier to visualize the data for each species without being constrained by a common axis limit.
+
+```{r}
+p <- ggplot(data = iris, mapping = aes(x = Sepal.Width, y = Sepal.Length))
+p + geom_point(mapping = aes(color = Species)) +
+    geom_smooth(method = "lm", color = "black") +
+    facet_wrap(vars(Species), scales = "free") +
+    labs(x = "Sepal Width", 
+         y = "Sepal Length", 
+         title = "Faceted Sepal Dimensions in Iris Species", 
+         subtitle = "Visualizing Sepal Length and Width Across Iris Species with Faceting", 
+         caption = "Source: Iris Dataset")
+```
+
+Now, it is clear that in Setosa species, there seems to be no direction and no linear relationship, matching with our calculations, implying *NO SIGNIFICANT RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+Although it seems to be a good solution, but we wont continue keeping scales = "free" because of the following reasons -
+
+1. Comparison: It becomes harder to compare the scales directly across facets since each has its own scale.
+2. Consistency: The visual consistency might be lost, which can be confusing if the audience needs to compare across facets.
+
+**Versicolor**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Strong linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+versicolor_data <- subset(iris, Species == "versicolor")
+pcor_versicolor <- cor(versicolor_data$Sepal.Length, versicolor_data$Petal.Length, method = "pearson")
+paste("Versicolor - Pearson's correlation coefficient: ", pcor_versicolor)
+
+ctest_versicolor <- cor.test(versicolor_data$Sepal.Length, versicolor_data$Petal.Length, method = "pearson")
+paste("Versicolor - P-value: ", ctest_versicolor$p.value)
+```
+A Pearson correlation coefficient of 0.754048958592016 indicates a strong positive linear relationship between Sepal.Length and Petal.Length for Versicolor species.
+
+Since the p-value is 2.58618950528093e-10, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Virginica**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Strong linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+virginica_data <- subset(iris, Species == "virginica")
+pcor_virginica <- cor(virginica_data$Sepal.Length, virginica_data$Petal.Length, method = "pearson")
+paste("Virginica - Pearson's correlation coefficient: ", pcor_virginica)
+
+ctest_virginica <- cor.test(virginica_data$Sepal.Length, virginica_data$Petal.Length, method = "pearson")
+paste("Virginica - P-value: ", ctest_virginica$p.value)
+```
+
+A Pearson correlation coefficient of 0.864224732935576 indicates a very strong positive linear relationship between Sepal.Length and Petal.Length for Virginica species.
+
+Since the p-value is 6.29778575890383e-16, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 3. Sepal.Length v/s Petal.Width
+
+```{r}
+p3 <- ggplot(data = iris, mapping = aes(x = Petal.Width, y = Sepal.Length))
+
+p3 + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     facet_wrap(vars(Species)) +
+     labs(x = "Petal Width", 
+          y = "Sepal Length", 
+          title = "Faceted Sepal Length vs. Petal Width in Iris Species", 
+          subtitle = "Analyzing the Correlation Between Sepal Length and Petal Width with Faceting", 
+          caption = "Source: Iris Dataset")
+```
+
+**Setosa**
+
+- **Direction:** Scatterplot shows a no direction
+- **Form:** Uniformly clustered from 0 to 0.6 in x-axis and 0 to 5.8 in y-axis
+- **Strength:** No linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+setosa_data <- subset(iris, Species == "setosa")
+pcor_setosa <- cor(setosa_data$Sepal.Length, setosa_data$Petal.Width, method = "pearson")
+paste("Setosa - Pearson's correlation coefficient: ", pcor_setosa)
+
+ctest_setosa <- cor.test(setosa_data$Sepal.Length, setosa_data$Petal.Width, method = "pearson")
+paste("Setosa - P-value: ", ctest_setosa$p.value)
+```
+
+A Pearson correlation coefficient of 0.27809835293597 indicates a weak positive linear relationship between Sepal.Length and Petal.Width for Setosa species.
+
+Since the p-value is 0.0505264417639827, which is greater than 0.05, we fail to reject the null hypothesis. This means there isn’t enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *NO SIGNIFICANT RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Versicolor**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Moderate linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+versicolor_data <- subset(iris, Species == "versicolor")
+pcor_versicolor <- cor(versicolor_data$Sepal.Length, versicolor_data$Petal.Width, method = "pearson")
+paste("Versicolor - Pearson's correlation coefficient: ", pcor_versicolor)
+
+ctest_versicolor <- cor.test(versicolor_data$Sepal.Length, versicolor_data$Petal.Width, method = "pearson")
+paste("Versicolor - P-value: ", ctest_versicolor$p.value)
+```
+
+A Pearson correlation coefficient of 0.54646107159863 indicates a moderate positive linear relationship between Sepal.Length and Petal.Width for Versicolor species.
+
+Since the p-value is 4.03542152606796e-05, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Virginica**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Weak linear relationship
+- **Outliers:** Since the relationship is weak, there is no specific trend. Hence, no particular set of points were found that would break the pattern of scatterplot.
+
+```{r}
+virginica_data <- subset(iris, Species == "virginica")
+pcor_virginica <- cor(virginica_data$Sepal.Length, virginica_data$Petal.Width, method = "pearson")
+paste("Virginica - Pearson's correlation coefficient: ", pcor_virginica)
+
+ctest_virginica <- cor.test(virginica_data$Sepal.Length, virginica_data$Petal.Width, method = "pearson")
+paste("Virginica - P-value: ", ctest_virginica$p.value)
+```
+
+A Pearson correlation coefficient of 0.281107709157319 indicates a weak positive linear relationship between Sepal.Length and Petal.Width for Virginica species.
+
+Since the p-value is 0.0479814933691885, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 4. Sepal.Width v/s Petal.Length
+
+```{r}
+p4 <- ggplot(data = iris, mapping = aes(x = Petal.Length, y = Sepal.Width))
+
+p4 + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     facet_wrap(vars(Species)) +
+     labs(x = "Petal Length", 
+          y = "Sepal Width", 
+          title = "Faceted Sepal Width and Petal Length in Iris Species", 
+        subtitle = "Investigating the Association Between Sepal Width and Petal Length with Faceting",  
+          caption = "Source: Iris Dataset")
+```
+
+**Setosa**
+
+- **Direction:** Scatterplot shows no direction
+- **Form:** Uniformly distributed in a cluster around 0 to 2 in x-axis and 2.8 to 4.5 in y-axis
+- **Strength:** No linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+setosa_data <- subset(iris, Species == "setosa")
+pcor_setosa <- cor(setosa_data$Sepal.Width, setosa_data$Petal.Length, method = "pearson")
+paste("Setosa - Pearson's correlation coefficient: ", pcor_setosa)
+
+ctest_setosa <- cor.test(setosa_data$Sepal.Width, setosa_data$Petal.Length, method = "pearson")
+paste("Setosa - P-value: ", ctest_setosa$p.value)
+```
+
+A Pearson correlation coefficient of 0.177699966782271 indicates a very weak positive linear relationship between Sepal.Width and Petal.Length for Setosa species.
+
+Since the p-value is 0.216978924196861, which is greater than 0.05, we fail to reject the null hypothesis. This means there isn’t enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *NO SIGNIFICANT RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Versicolor**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Moderate linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+versicolor_data <- subset(iris, Species == "versicolor")
+pcor_versicolor <- cor(versicolor_data$Sepal.Width, versicolor_data$Petal.Length, method = "pearson")
+paste("Versicolor - Pearson's correlation coefficient: ", pcor_versicolor)
+
+ctest_versicolor <- cor.test(versicolor_data$Sepal.Width, versicolor_data$Petal.Length, method = "pearson")
+paste("Versicolor - P-value: ", ctest_versicolor$p.value)
+```
+
+A Pearson correlation coefficient of 0.560522091692982 indicates a moderate positive linear relationship between Sepal.Width and Petal.Length for Versicolor species.
+
+Since the p-value is 2.30216798042839e-05, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Virginica**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Weak linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+virginica_data <- subset(iris, Species == "virginica")
+pcor_virginica <- cor(virginica_data$Sepal.Width, virginica_data$Petal.Length, method = "pearson")
+paste("Virginica - Pearson's correlation coefficient: ", pcor_virginica)
+
+ctest_virginica <- cor.test(virginica_data$Sepal.Width, virginica_data$Petal.Length, method = "pearson")
+paste("Virginica - P-value: ", ctest_virginica$p.value)
+```
+
+A Pearson correlation coefficient of 0.401044577342786 indicates a moderate positive linear relationship between Sepal.Width and Petal.Length for Virginica species.
+
+Since the p-value is 0.00389770406833832, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations almost matches with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 5. Sepal.Width v/s Petal.Width
+
+```{r}
+p5 <- ggplot(data = iris, mapping = aes(x = Petal.Width, y = Sepal.Width))
+p5 + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     facet_wrap(vars(Species)) +
+     labs(x = "Petal Width", 
+          y = "Sepal Width", 
+          title = "Faceted Sepal Width vs. Petal Width in Iris Species", 
+        subtitle = "Understanding the Relationship Between Sepal and Petal Widths with Faceting", 
+          caption = "Source: Iris Dataset")
+```
+
+**Setosa**
+
+- **Direction:** Scatterplot shows no direction
+- **Form:** Uniformly clustered between 0 to 0.75 in x-axis and 2.8 to 4.5 in y-axis
+- **Strength:** No linear relationship
+- **Outliers:** No particular observable outlier,no trend visible
+
+```{r}
+setosa_data <- subset(iris, Species == "setosa")
+pcor_setosa <- cor(setosa_data$Sepal.Width, setosa_data$Petal.Width, method = "pearson")
+paste("Setosa - Pearson's correlation coefficient: ", pcor_setosa)
+
+ctest_setosa <- cor.test(setosa_data$Sepal.Width, setosa_data$Petal.Width, method = "pearson")
+paste("Setosa - P-value: ", ctest_setosa$p.value)
+```
+
+A Pearson correlation coefficient of 0.232752011362879 indicates a weak positive linear relationship between Sepal.Width and Petal.Width for Setosa species.
+
+Since the p-value is 0.103821143305246, which is greater than 0.05, we fail to reject the null hypothesis. This means there isn’t enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *NO SIGNIFICANT RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Versicolor**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Moderate linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+versicolor_data <- subset(iris, Species == "versicolor")
+pcor_versicolor <- cor(versicolor_data$Sepal.Width, versicolor_data$Petal.Width, method = "pearson")
+paste("Versicolor - Pearson's correlation coefficient: ", pcor_versicolor)
+
+ctest_versicolor <- cor.test(versicolor_data$Sepal.Width, versicolor_data$Petal.Width, method = "pearson")
+paste("Versicolor - P-value: ", ctest_versicolor$p.value)
+```
+
+A Pearson correlation coefficient of 0.663998720024111 indicates a strong positive linear relationship between Sepal.Width and Petal.Width for Versicolor species.
+
+Since the p-value is 1.46666081421797e-07, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations almost matches with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Virginica**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Moderate linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+virginica_data <- subset(iris, Species == "virginica")
+pcor_virginica <- cor(virginica_data$Sepal.Width, virginica_data$Petal.Width, method = "pearson")
+paste("Virginica - Pearson's correlation coefficient: ", pcor_virginica)
+
+ctest_virginica <- cor.test(virginica_data$Sepal.Width, virginica_data$Petal.Width, method = "pearson")
+paste("Virginica - P-value: ", ctest_virginica$p.value)
+```
+
+A Pearson correlation coefficient of 0.537728026266189 indicates a moderate positive linear relationship between Sepal.Width and Petal.Width for Virginica species.
+
+Since the p-value is 5.6476104022877e-05, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+### 6. Petal.Length v/s Petal.Width
+
+```{r}
+p6 <- ggplot(data = iris, mapping = aes(x = Petal.Width, y = Petal.Length))
+p6 + geom_point(mapping = aes(color = Species)) +
+     geom_smooth(method = "lm", color = "black") +
+     facet_wrap(vars(Species)) +
+     labs(x = "Petal Width", 
+          y = "Petal Length", 
+          title = "Faceted Petal Dimensions in Iris Species", 
+        subtitle = "Visualizing Petal Length and Width Across Iris Species with faceting", 
+          caption = "Source: Iris Dataset")
+```
+
+**Setosa**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Moderate linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+setosa_data <- subset(iris, Species == "setosa")
+pcor_setosa <- cor(setosa_data$Petal.Length, setosa_data$Petal.Width, method = "pearson")
+paste("Setosa - Pearson's correlation coefficient: ", pcor_setosa)
+
+ctest_setosa <- cor.test(setosa_data$Petal.Length, setosa_data$Petal.Width, method = "pearson")
+paste("Setosa - P-value: ", ctest_setosa$p.value)
+```
+
+A Pearson correlation coefficient of 0.331630040804119 indicates a weak positive linear relationship between Petal.Length and Petal.Width for Setosa species.
+
+Since the p-value is 0.0186389150075372, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations almost matches with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Versicolor**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Strong linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+versicolor_data <- subset(iris, Species == "versicolor")
+pcor_versicolor <- cor(versicolor_data$Petal.Length, versicolor_data$Petal.Width, method = "pearson")
+paste("Versicolor - Pearson's correlation coefficient: ", pcor_versicolor)
+
+ctest_versicolor <- cor.test(versicolor_data$Petal.Length, versicolor_data$Petal.Width, method = "pearson")
+paste("Versicolor - P-value: ", ctest_versicolor$p.value)
+```
+
+A Pearson correlation coefficient of 0.786668088522817 indicates a strong positive linear relationship between Petal.Length and Petal.Width for Versicolor species.
+
+Since the p-value is 1.27191570632367e-11, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+**Virginica**
+
+- **Direction:** Scatterplot shows a Positive direction
+- **Form:** Linear, since points cluster near a line
+- **Strength:** Weak linear relationship
+- **Outliers:** No particular observable outlier
+
+```{r}
+virginica_data <- subset(iris, Species == "virginica")
+pcor_virginica <- cor(virginica_data$Petal.Length, virginica_data$Petal.Width, method = "pearson")
+paste("Virginica - Pearson's correlation coefficient: ", pcor_virginica)
+
+ctest_virginica <- cor.test(virginica_data$Petal.Length, virginica_data$Petal.Width, method = "pearson")
+paste("Virginica - P-value: ", ctest_virginica$p.value)
+```
+
+A Pearson correlation coefficient of 0.322108215900318 indicates a weak positive linear relationship between Petal.Length and Petal.Width for Virginica species.
+
+Since the p-value is 0.0225357672798739, which is less than 0.05, we reject the null hypothesis. This means there is enough evidence to conclude that there is a significant relationship between the two variables.
+
+Both the mathematical observations match with our earlier observation from the scatterplot, showing *THERE EXISTS A RELATIONSHIP BETWEEN THE 2 VARIABLES*.
+
+## 5. Discussion and Interpretation
+
+After a brief analysis of the Iris dataset, we discovered several important trends. Here are some key findings:
+
+- It is possible for a scatterplot as a whole to show different properties compared to the scatterplots after faceting. For example, although Sepal Length and Sepal Width are not related when considering the entire dataset, within each species, they are either strongly or moderately associated.
+- Overall, except for Sepal Length and Sepal Width, all the properties in the Iris dataset are associated with each other.
+- For **Setosa species**, associations are only found within the same parts of the plant. This means that the length and width of its sepals are associated, and the length and width of its petals are associated, but there is no association between its petals and sepals.
+- For **Versicolor species**, all properties are related to each other. This means all six combinations of the four properties in the Iris dataset are related in the case of Versicolor species. In fact, Versicolor shows either strong or moderate associations for all combinations.
+- For **Virginica species**, all properties are related to each other. This means all six combinations of the four properties in the Iris dataset are related in the case of Virginica species.
+- Data analysis reveals trends that might be counterintuitive. For example, one might expect an association between the same parts of the plant. While this is true for petals, it is not the case for sepals.
+- Visual graphics and inferential statistics may yield different results. The appropriate solution should be based on the specific situation.
+- Sometimes trends are not immediately visible. It may be necessary to modify the graph, sometimes through trial and error, to uncover the trend.
+
+## 6. Conclusion
+
+In conclusion, the analysis of the Iris dataset has provided valuable insights into the relationships between sepal and petal dimensions across different species. By employing a combination of summary statistics, scatterplots, faceting, and correlation analysis, we were able to uncover both overall trends and species-specific patterns.
+
+Initially, summary statistics such as `summary()` and `glimpse()` were used to gain a foundational understanding of the dataset. These tools helped in identifying the basic characteristics and distributions of the variables, setting the stage for more detailed analysis.
+
+Key findings within analysis include the strong associations within the same parts of the plant for Setosa, the interconnected relationships across all variables for Versicolor, and the consistent patterns observed in Virginica. These results highlight the importance of detailed data analysis and the use of appropriate visualization techniques to reveal underlying patterns.
+
+The study also demonstrated that visual and statistical analyses can complement each other, providing a more comprehensive understanding of the data. Adjustments to graphical representations is necessary sometimes to accurately interpret the trends, emphasizing the iterative nature of data analysis.
+
+Future work could involve using newer and more advanced statistical methods to uncover additional trends. For example, multiple regression could be used to examine how petal length depends on both sepal length and width. Additionally, we could facet based on quantitative variables by creating bins to explore trends within specific regions of the scatterplot. Instead of relying solely on scatterplots, which are useful for comparing two variables, we could use different types of graphs to explore trends within individual variables. We could also identify graphs that are more effective than scatterplots for comparative studies and utilize those. Overall, there are always opportunities for better analysis and deeper insights.
